@@ -8,7 +8,8 @@ static URL: &str = "http://localhost:8080";
 static SCOPE_T: &str = "security.ts.bfc8.tokenization";
 static SCOPE_D: &str = "security.ts.bfc8.detokenization";
 
-pub fn main() {
+#[tokio::main]
+async fn main() {
     env_logger::init();
 
     let args: Vec<String> = env::args().collect();
@@ -36,7 +37,7 @@ pub fn main() {
     }
 
     log::info!("calling lib");
-    let result = match get_jwt(scope, url) {
+    let result = match get_jwt(scope, url).await {
         Ok(token) => token,
         Err(e) => {
             log::error!("Error: {e}");

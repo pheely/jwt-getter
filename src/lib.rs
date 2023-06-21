@@ -3,7 +3,6 @@ use std::error::Error;
 
 use jwt_simple::prelude::*;
 use log;
-use serde_json;
 
 const SUBJECT: &'static str = "fba8ce10-6689-439e-9344-c62cd1a1040f";
 const AUDIENCE: &'static str = "/sso/oauth2/realms/root/realms/api/access_token";
@@ -50,7 +49,7 @@ struct ResponsePayload {
     expires_in: u16,
 }
 
-pub fn get_jwt(scope: &str, url: &str) -> Result<String, Box<dyn Error>> {
+pub async fn get_jwt(scope: &str, url: &str) -> Result<String, Box<dyn Error>> {
     let key_pair = RS256KeyPair::from_pem(PRIVATE_KEY_PEM)?;
     let audience = format!("{}{}", url, AUDIENCE);
     let endpoint = format!("{}{}", url, AUDIENCE);
@@ -72,12 +71,10 @@ pub fn get_jwt(scope: &str, url: &str) -> Result<String, Box<dyn Error>> {
     payload.insert("client_assertion_type", CLIENT_ASSERTION_TYPE);
     payload.insert("client_assertion", token.as_str());
 
-    let http_client = reqwest::blocking::Client::new();
-    let response = http_client.post(endpoint).form(&payload).send()?;
+    let http_client = reqwest::Client::builder().build()?;
+    let response = http_client.post(endpoint).form(&payload).send().await?;
 
-    let rsp = response.text()?;
-
-    let response_payload: ResponsePayload = serde_json::from_str(&rsp)?;
+    let response_payload = response.json::<ResponsePayload>().await?;
 
     Ok(response_payload.access_token)
 }
